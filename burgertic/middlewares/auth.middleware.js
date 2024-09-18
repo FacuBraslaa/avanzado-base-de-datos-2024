@@ -2,6 +2,31 @@ import jwt from "jsonwebtoken";
 import UsuariosService from "../services/usuarios.service.js";
 
 export const verifyToken = async (req, res, next) => {
+    try {
+      
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return res.status(401).json({ message: 'No token provided' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        if (!authHeader.startsWith('Bearer ') || !token) {
+            return res.status(401).json({ message: 'Invalid token format' });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        if (!decoded || !decoded.userId) {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
+
+        req.userId = decoded.userId;
+        
+        next();
+    } catch (error) {
+        return res.status(401).json({ message: 'Unauthorized', error: error.message });
+    }
+  
     // --------------- COMPLETAR ---------------
     /*
 
@@ -17,6 +42,22 @@ export const verifyToken = async (req, res, next) => {
 };
 
 export const verifyAdmin = async (req, res, next) => {
+    try {
+        const userId = req.userId; 
+        
+        const user = await getUserById(userId);
+        
+        if (!user || !user.isAdmin) {
+            return res.status(403).json({ message: 'Access denied: Admins only' });
+        }
+
+        next();
+    } catch (error) {
+        return res.status(500).json({ message: 'Server error', error: error.message });
+    }
+    
+    
+    
     // --------------- COMPLETAR ---------------
     /*
 
